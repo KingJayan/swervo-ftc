@@ -1,11 +1,2 @@
-pluginManagement {
-    repositories {
-        maven { url = "https://repo.dairy.foundation/releases" }
-        google()
-        mavenCentral()
-        gradlePluginPortal()
-    }
-}
 include ':FtcRobotController'
 include ':TeamCode'
-include ':MeepMeepTesting'
