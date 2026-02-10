@@ -32,38 +32,33 @@ public class SwerveDrivetrain extends Drivetrain {
     private double yVelocity = 0;
 
     public SwerveDrivetrain(HardwareMap hardwareMap) {
-        // init drive motors
+
         DcMotorEx leftFront = hardwareMap.get(DcMotorEx.class, SwerveConstants.LEFT_FRONT_MOTOR);
         DcMotorEx rightFront = hardwareMap.get(DcMotorEx.class, SwerveConstants.RIGHT_FRONT_MOTOR);
         DcMotorEx leftBack = hardwareMap.get(DcMotorEx.class, SwerveConstants.LEFT_BACK_MOTOR);
         DcMotorEx rightBack = hardwareMap.get(DcMotorEx.class, SwerveConstants.RIGHT_BACK_MOTOR);
 
-        // init steering servos
         CRServo steerLF = hardwareMap.get(CRServo.class, SwerveConstants.STEER_LF);
         CRServo steerRF = hardwareMap.get(CRServo.class, SwerveConstants.STEER_RF);
         CRServo steerLB = hardwareMap.get(CRServo.class, SwerveConstants.STEER_LB);
         CRServo steerRB = hardwareMap.get(CRServo.class, SwerveConstants.STEER_RB);
 
-        // init analog sensors
         AnalogInput sensorLF = hardwareMap.get(AnalogInput.class, SwerveConstants.SENSOR_LF);
         AnalogInput sensorRF = hardwareMap.get(AnalogInput.class, SwerveConstants.SENSOR_RF);
         AnalogInput sensorLB = hardwareMap.get(AnalogInput.class, SwerveConstants.SENSOR_LB);
         AnalogInput sensorRB = hardwareMap.get(AnalogInput.class, SwerveConstants.SENSOR_RB);
 
-        // create modules
         lf = new SwerveModule(leftFront, steerLF, sensorLF);
         rf = new SwerveModule(rightFront, steerRF, sensorRF);
         lb = new SwerveModule(leftBack, steerLB, sensorLB);
         rb = new SwerveModule(rightBack, steerRB, sensorRB);
 
-        // init kinematics
         kinematics = new SwerveKinematics();
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
         setNominalVoltage(SwerveConstants.NOMINAL_VOLTAGE);
     }
 
-    /** update module odometry - must be called every loop */
     public void update() {
         lf.update();
         rf.update();
@@ -79,7 +74,7 @@ public class SwerveDrivetrain extends Drivetrain {
 
         SwerveModuleState[] states = kinematics.calculate(x, y, rx);
 
-        // pack: [lfAngle, lfSpeed, rfAngle, rfSpeed, lbAngle, lbSpeed, rbAngle, rbSpeed]
+        //pack: [lfAngle, lfSpeed, rfAngle, rfSpeed, lbAngle, lbSpeed, rbAngle, rbSpeed]
         driveOutputs[0] = states[0].angle; driveOutputs[1] = states[0].speed;
         driveOutputs[2] = states[1].angle; driveOutputs[3] = states[1].speed;
         driveOutputs[4] = states[2].angle; driveOutputs[5] = states[2].speed;
@@ -98,13 +93,13 @@ public class SwerveDrivetrain extends Drivetrain {
             return;
         }
 
-        // set module states
+        //set module states
         lf.setTargetState(outputs[0], outputs[1]);
         rf.setTargetState(outputs[2], outputs[3]);
         lb.setTargetState(outputs[4], outputs[5]);
         rb.setTargetState(outputs[6], outputs[7]);
 
-        // execute with voltage compensation
+        //exec w/ voltage compensation
         double voltageComp = isVoltageCompensation() ? getNominalVoltage() / getVoltage() : 1.0;
         lf.execute(voltageComp);
         rf.execute(voltageComp);
@@ -127,12 +122,10 @@ public class SwerveDrivetrain extends Drivetrain {
 
     @Override
     public void startTeleopDrive() {
-        // nothing special needed
     }
 
     @Override
     public void startTeleopDrive(boolean fieldCentric) {
-        // nothing special needed
     }
 
     @Override
@@ -173,7 +166,10 @@ public class SwerveDrivetrain extends Drivetrain {
         rb.stop();
     }
 
-    // --- accessors ---
+
+
+
+
     public SwerveModule getModuleLF() { return lf; }
     public SwerveModule getModuleRF() { return rf; }
     public SwerveModule getModuleLB() { return lb; }
