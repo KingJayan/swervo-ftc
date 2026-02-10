@@ -10,15 +10,11 @@ public class SwerveModule {
     private final CRServo steer;
     private final AnalogInput sensor;
 
-    // gear reduction: 3.2 servo rotations = 1 module rotation
-    private static final double GEAR_RATIO = 3.2;
-    private static final double MAX_VOLTAGE = 3.3;
-
-    // pid constants
+    // pid constants (loaded from SwerveConstants)
     /// TODO: TUNE
-    private double kP = 0.02;
-    private double kStatic = 0.05;
-    private double angleTolerance = 2.0; // degrees
+    private double kP;
+    private double kStatic;
+    private double angleTolerance;
 
     // odometer tracking for rollover
     private double lastServoAngle = 0.0;
@@ -35,6 +31,11 @@ public class SwerveModule {
         this.drive = drive;
         this.steer = steer;
         this.sensor = sensor;
+
+        // load constants
+        this.kP = SwerveConstants.STEER_KP;
+        this.kStatic = SwerveConstants.STEER_KSTATIC;
+        this.angleTolerance = SwerveConstants.STEER_TOLERANCE;
 
         // configure drive motor
         this.drive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -73,7 +74,7 @@ public class SwerveModule {
         // calculate module angle: total servo travel / gear ratio
         // totalServoRotations tracks full rotations, currentServoAngle is partial
         double totalServoDegrees = (totalServoRotations * 360.0) + currentServoAngle;
-        currentModuleAngle = totalServoDegrees / GEAR_RATIO;
+        currentModuleAngle = totalServoDegrees / SwerveConstants.GEAR_RATIO;
     }
 
     /**
@@ -81,8 +82,20 @@ public class SwerveModule {
      */
     private double getServoAngle() {
         double voltage = sensor.getVoltage();
-        voltage = Math.min(MAX_VOLTAGE, Math.max(0, voltage));
-        return (voltage / MAX_VOLTAGE) * 360.0;
+        voltage = Math.min(SwerveConstants.MAX_SENSOR_VOLTAGE, Math.max(0, voltage));
+        return (voltage / SwerveConstants.MAX_SENSOR_VOLTAGE) * 360.0;
+    }
+
+    /**
+     * set target state for module using SwerveModuleState.
+     * applies optimization automatically.
+     * @param state the desired module state
+     */
+    public void setTargetState(SwerveModuleState state) {
+        SwerveModuleState optimized = state.optimize(currentModuleAngle);
+        this.targetAngle = optimized.angle;
+        this.drivePower = optimized.speed;
+        this.driveReversed = (optimized.speed != state.speed);
     }
 
     /**
@@ -91,24 +104,7 @@ public class SwerveModule {
      * @param power drive motor power (-1 to 1)
      */
     public void setTargetState(double angle, double power) {
-        this.drivePower = power;
-        this.targetAngle = angle;
-        this.driveReversed = false;
-
-        optimize();
-    }
-
-    /**
-     * optimization: if target > 90 deg from current, flip drive and rotate 180.
-     * reduces max rotation to 90 deg for faster response.
-     */
-    private void optimize() {
-        double error = angleWrap(targetAngle - currentModuleAngle);
-
-        if (Math.abs(error) > 90.0) {
-            targetAngle = angleWrap(targetAngle + 180.0);
-            driveReversed = true;
-        }
+        setTargetState(new SwerveModuleState(angle, power));
     }
 
     /**
@@ -185,4 +181,11 @@ public class SwerveModule {
     public void setKp(double kP) { this.kP = kP; }
     public void setKStatic(double kStatic) { this.kStatic = kStatic; }
     public void setAngleTolerance(double tolerance) { this.angleTolerance = tolerance; }
+
+    /** reload constants from SwerveConstants */
+    public void reloadConstants() {
+        this.kP = SwerveConstants.STEER_KP;
+        this.kStatic = SwerveConstants.STEER_KSTATIC;
+        this.angleTolerance = SwerveConstants.STEER_TOLERANCE;
+    }
 }
